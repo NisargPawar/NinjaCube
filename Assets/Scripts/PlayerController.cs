@@ -27,14 +27,14 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     private float BASE_VELOCITY_RUN_MULTIPLIER = 2f;
     [SerializeField]
-    private float BASE_VELOCITY_DASH_MULTIPLIER = 4f;
+    private float BASE_VELOCITY_DASH_MULTIPLIER = 8f;
 
     //general purpose variables
     private Vector3 PlayerDirection = new Vector3(0, 0, 0);
     private float playerSpeed = 0;
     private bool isDash = false;
-    private float dashTime = 0.2f;
-    private float dashCounter = 0.2f;
+    private float dashTime = 0.15f;
+    private float dashCounter = 0.15f;
     
     // Start is called before the first frame update
     void Start()
@@ -101,7 +101,7 @@ public class PlayerController : MonoBehaviour
         {
             dashTime = dashCounter;
             ALLOW_MOVEMENT = true;
-            rb.velocity = new Vector2(0, 0);
+            rb.velocity = new Vector3(0, 0);
             isDash = false;
         }
         else
