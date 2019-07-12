@@ -34,9 +34,7 @@ public class PlayerController : MonoBehaviour
     private bool isDash = false;
     private float dashTime = 0.2f;
     private float dashCounter = 0.2f;
-    private float tiltAmountForward = 0;
-    private float tiltVelocityForward;
-
+    
     // Start is called before the first frame update
     void Start()
     {
@@ -62,29 +60,16 @@ public class PlayerController : MonoBehaviour
         //movement control start
         if (ALLOW_MOVEMENT)
         {
+            if (PlayerDirection != Vector3.zero)
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(PlayerDirection), Time.deltaTime * 10);
+
             playerSpeed = BASE_VELOCITY_PLAYER_MOVEMENT * (Input.GetButton("Run") ? BASE_VELOCITY_RUN_MULTIPLIER : 1);
             if (Input.GetButton("Horizontal") || Input.GetButton("Vertical"))
             {
-                tiltAmountForward = Mathf.SmoothDamp(tiltAmountForward, 20, ref tiltAmountForward, Time.deltaTime);
-                if (PlayerDirection != Vector3.zero)
-                {
-                    if (transform.rotation != Quaternion.LookRotation(PlayerDirection))
-                    {
-                        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(PlayerDirection), Time.deltaTime * 10);
-                    }
-                    else
-                    {
-
-                        if (transform) {
-
-                        }
-                        rb.velocity = PlayerDirection * playerSpeed * Time.deltaTime;
-                    }
-                }
+                rb.velocity = PlayerDirection * playerSpeed * Time.deltaTime;
             }
             else
             {
-                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(rb.transform.up.normalized * -1), Time.deltaTime * 10);
                 rb.velocity = PlayerDirection * 0;
             }
         }
