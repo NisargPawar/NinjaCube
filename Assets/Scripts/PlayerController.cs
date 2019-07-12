@@ -6,6 +6,7 @@ public class PlayerController : MonoBehaviour
 {
     //player's RigidBody refrence
     private Rigidbody rb;
+    private Animator anim;
 
     //controller variables
     [SerializeField]
@@ -39,6 +40,7 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         rb = this.GetComponent<Rigidbody>();
+        anim = this.GetComponentInChildren<Animator>();
     }
 
     // Update is called once per frame
@@ -53,6 +55,7 @@ public class PlayerController : MonoBehaviour
             isDash = true && ALLOW_DASH;
         }
         //dash end
+        Debug.Log(anim);
     }
 
     private void FixedUpdate()
@@ -64,13 +67,16 @@ public class PlayerController : MonoBehaviour
                 transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(PlayerDirection), Time.deltaTime * 10);
 
             playerSpeed = BASE_VELOCITY_PLAYER_MOVEMENT * (Input.GetButton("Run") ? BASE_VELOCITY_RUN_MULTIPLIER : 1);
+            
             if (Input.GetButton("Horizontal") || Input.GetButton("Vertical"))
             {
                 rb.velocity = PlayerDirection * playerSpeed * Time.deltaTime;
+                anim.SetBool("move", true);
             }
             else
             {
                 rb.velocity = PlayerDirection * 0;
+                anim.SetBool("move", false);
             }
         }
         if (isDash)
