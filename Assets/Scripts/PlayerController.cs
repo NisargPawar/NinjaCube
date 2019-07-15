@@ -29,7 +29,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     private float BASE_VELOCITY_DASH_MULTIPLIER = 8f;
     [SerializeField]
-    private float BASE_FALL_MULTIPLIER= 3f;
+    private float BASE_FALL_MULTIPLIER = 4f;
 
     //general purpose variables
     private Vector3 PlayerDirection = new Vector3(0, 0, 0);
@@ -38,7 +38,9 @@ public class PlayerController : MonoBehaviour
     private bool isJump = false;
     private float dashTime = 0.15f;
     private float dashCounter = 0.15f;
-    
+    private float jumpTime = 0.08f;
+    private float jumpCounter = 0.08f;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -70,21 +72,51 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (IS_GROUNDED) //only for animation sake
+        {
+            anim.SetBool("isGrounded", true);
+            anim.SetBool("isJumping", false);
+            anim.SetBool("isFalling", false);
+        }
+        else
+        {
+            anim.SetBool("isGrounded", false);
+            if (rb.velocity.normalized.y > 0)
+            {
+                anim.SetBool("isJumping", true);
+                anim.SetBool("isFalling", false);
+            }
+            else if (rb.velocity.normalized.y < 0)
+            {
+                anim.SetBool("isJumping", false);
+                anim.SetBool("isFalling", true);
+            }
+            else
+            {
+                anim.SetBool("isJumping", false);
+                anim.SetBool("isFalling", false);
+            }
+        }
+
+
         //movement control start
         if (ALLOW_MOVEMENT)
         {
             if (PlayerDirection != Vector3.zero)
                 transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(PlayerDirection), Time.deltaTime * 10);
 
-            playerSpeed = BASE_VELOCITY_PLAYER_MOVEMENT * (Input.GetButton("Run") ? BASE_VELOCITY_RUN_MULTIPLIER : 1);
-            
+            if (IS_GROUNDED)
+            {
+                playerSpeed = BASE_VELOCITY_PLAYER_MOVEMENT * (Input.GetButton("Run") ? BASE_VELOCITY_RUN_MULTIPLIER : 1);
+            }
+            else
+            {
+                playerSpeed = BASE_VELOCITY_PLAYER_MOVEMENT * (Input.GetButton("Run") ? BASE_VELOCITY_RUN_MULTIPLIER * 0.75f : 1 * 0.5f);
+            }
+
             if (Input.GetButton("Horizontal") || Input.GetButton("Vertical"))
             {
-                rb.velocity = PlayerDirection * playerSpeed * Time.deltaTime + new Vector3(0,rb.velocity.y,0);
-                /*if (rb.velocity.magnitude < playerSpeed * Time.deltaTime)
-                {
-                    rb.AddForce(PlayerDirection * playerSpeed * Time.deltaTime);
-                }*/
+                rb.velocity = PlayerDirection * playerSpeed * Time.deltaTime + new Vector3(0, rb.velocity.y, 0);
                 anim.SetBool("move", true);
             }
             else
@@ -102,7 +134,7 @@ public class PlayerController : MonoBehaviour
         {
             Jump();
         }
-        //jump fall
+        //jump fall and amplified gravity
         if (rb.velocity.y < 0)
         {
             rb.velocity += Vector3.up * Physics.gravity.y * BASE_FALL_MULTIPLIER * Time.deltaTime;
@@ -111,7 +143,11 @@ public class PlayerController : MonoBehaviour
         {
             rb.velocity += Vector3.up * Physics.gravity.y * (BASE_FALL_MULTIPLIER + 1) * Time.deltaTime;
         }
-        //jump fall
+        else
+        {
+            rb.velocity += Vector3.up * Physics.gravity.y * Time.deltaTime * BASE_FALL_MULTIPLIER;
+        }
+        //jump fall and amplified gravity
     }
     //movement control end
 
@@ -121,31 +157,59 @@ public class PlayerController : MonoBehaviour
         float dash_speed = BASE_VELOCITY_PLAYER_MOVEMENT * BASE_VELOCITY_DASH_MULTIPLIER;
         if (dashTime == dashCounter)
         {
-            rb.velocity = PlayerDirection * dash_speed * Time.deltaTime;
+            anim.SetBool("isDashing", true);
+            rb.velocity = rb.transform.forward.normalized * dash_speed * Time.deltaTime;
             Debug.Log("Dash Velocity: " + dash_speed);
+
             ALLOW_MOVEMENT = false;
+            ALLOW_JUMP = false;
             dashTime -= Time.deltaTime;
         }
         else if (dashTime <= 0)
         {
+            anim.SetBool("isDashing", false);
             dashTime = dashCounter;
             ALLOW_MOVEMENT = true;
+            ALLOW_JUMP = true;
             rb.velocity = new Vector3(0, 0, 0);
             isDash = false;
         }
         else
         {
             dashTime -= Time.deltaTime;
-            rb.velocity = PlayerDirection * dash_speed * Time.deltaTime;
+            rb.velocity = rb.transform.forward.normalized * dash_speed * Time.deltaTime;
         }
     }
     //dash end
 
     //jump start
-    void Jump() {
+    void Jump()
+    {
         Debug.Log("inside jump");
-        rb.AddForce(Vector3.up * BASE_VELOCITY_PLAYER_MOVEMENT * BASE_VELOCITY_JUMP_MULTIPLIER * Time.deltaTime,ForceMode.Impulse);
-        isJump = false;
+        /*rb.velocity += Vector3.up * BASE_VELOCITY_PLAYER_MOVEMENT * BASE_VELOCITY_JUMP_MULTIPLIER * Time.deltaTime;*/
+        /*rb.AddForce(Vector3.up * BASE_VELOCITY_PLAYER_MOVEMENT * BASE_VELOCITY_JUMP_MULTIPLIER * Time.deltaTime, ForceMode.Impulse);*/
+
+        float jump_time = BASE_VELOCITY_PLAYER_MOVEMENT * BASE_VELOCITY_JUMP_MULTIPLIER;
+        if (jumpTime == jumpCounter)
+        {
+            rb.velocity += Vector3.up * jump_time * Time.deltaTime;
+            Debug.Log("Dash Velocity: " + jump_time);
+            /*ALLOW_MOVEMENT = false;*/
+            jumpTime -= Time.deltaTime;
+        }
+        else if (jumpTime <= 0)
+        {
+            jumpTime = jumpCounter;
+            /*ALLOW_MOVEMENT = true;*/
+            /*rb.velocity -= new Vector3(0, rb.velocity.y, 0);*/
+            rb.AddForce(0, Physics.gravity.y * 2, 0, ForceMode.Impulse);
+            isJump = false;
+        }
+        else
+        {
+            jumpTime -= Time.deltaTime;
+            rb.velocity += Vector3.up * jump_time * Time.deltaTime;
+        }
     }
 
     //jump end
@@ -155,7 +219,8 @@ public class PlayerController : MonoBehaviour
 
 
     //setters and getters
-    public void setGrounded() {
+    public void setGrounded()
+    {
         IS_GROUNDED = true;
     }
 
@@ -164,7 +229,8 @@ public class PlayerController : MonoBehaviour
         IS_GROUNDED = false;
     }
 
-    public bool isGrounded() {
+    public bool isGrounded()
+    {
         return IS_GROUNDED;
     }
 
